@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APEX PMS — Fleet Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("apex-pms-theme") || "dark";
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="bg-layer" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <header class="topbar">
+      <div class="brand-block">
+        <p class="brand">APEX PMS</p>
+        <p class="brand-sub">Preventive Maintenance System</p>
+      </div>
+      <div class="vehicle-chip">
+        <label class="sr-only" for="vehicle-select">Select vehicle</label>
+        <select id="vehicle-select" class="vehicle-select" aria-label="Select vehicle"></select>
+        <span class="meta" id="vehicle-meta">2024 · 6HK1-814133</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="theme-switch" role="group" aria-label="Theme">
+          <button
+            type="button"
+            class="theme-btn"
+            id="btn-theme-dark"
+            data-theme-choice="dark"
+            aria-pressed="true"
+          >
+            Dark
+          </button>
+          <button
+            type="button"
+            class="theme-btn"
+            id="btn-theme-light"
+            data-theme-choice="light"
+            aria-pressed="false"
+          >
+            Light
+          </button>
+        </div>
+        <button type="button" class="btn ghost compact" id="btn-admin-toggle">
+          Admin Panel
+        </button>
+        <div class="clock" id="live-clock"></div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="hero">
+        <div class="hero-copy">
+          <h1>Service Interval Monitor</h1>
+          <p>
+            Automated oil-change surveillance. Warning near 4,500 km — critical
+            alert at 5,000 km.
+          </p>
+          <div class="cta-row">
+            <button type="button" class="btn primary" id="btn-sim-drive">
+              Simulate +250 km
+            </button>
+            <button type="button" class="btn ghost" id="btn-reset-cycle">
+              Reset Oil Cycle
+            </button>
+          </div>
+        </div>
+
+        <div class="gauge-stage">
+          <div class="gauge-wrap">
+            <svg
+              id="interval-gauge"
+              class="gauge"
+              viewBox="0 0 280 280"
+              role="img"
+              aria-label="Mileage interval gauge"
+            >
+              <defs>
+                <linearGradient id="arcSafe" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#1fa97a" />
+                  <stop offset="100%" stop-color="#3dd68c" />
+                </linearGradient>
+                <linearGradient id="arcWarn" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#e8a317" />
+                  <stop offset="100%" stop-color="#ff6b2c" />
+                </linearGradient>
+                <linearGradient id="arcCrit" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#ff2d4b" />
+                  <stop offset="100%" stop-color="#ff6a3d" />
+                </linearGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <circle class="gauge-ring" cx="140" cy="140" r="112" />
+              <path id="gauge-track" class="gauge-track" />
+              <path id="gauge-progress" class="gauge-progress" filter="url(#glow)" />
+              <g id="gauge-ticks"></g>
+              <line
+                id="gauge-needle"
+                class="gauge-needle"
+                x1="140"
+                y1="140"
+                x2="140"
+                y2="42"
+              />
+              <circle class="gauge-hub" cx="140" cy="140" r="10" />
+              <text class="gauge-value" x="140" y="168" text-anchor="middle">
+                <tspan id="gauge-km">0</tspan>
+              </text>
+              <text class="gauge-unit" x="140" y="190" text-anchor="middle">
+                KM THIS CYCLE
+              </text>
+            </svg>
+            <div class="status-pill" id="status-pill">SAFE</div>
+          </div>
+
+          <div class="side-gauges">
+            <div class="mini-gauge">
+              <svg viewBox="0 0 160 160" aria-hidden="true">
+                <circle class="mini-ring" cx="80" cy="80" r="58" />
+                <circle
+                  id="odo-progress"
+                  class="mini-progress"
+                  cx="80"
+                  cy="80"
+                  r="58"
+                />
+              </svg>
+              <div class="mini-readout">
+                <span class="mini-label">ODOMETER</span>
+                <strong id="odo-display">0</strong>
+                <span class="mini-unit">KM</span>
+              </div>
+            </div>
+            <div class="mini-gauge">
+              <svg viewBox="0 0 160 160" aria-hidden="true">
+                <circle class="mini-ring" cx="80" cy="80" r="58" />
+                <circle
+                  id="remain-progress"
+                  class="mini-progress remain"
+                  cx="80"
+                  cy="80"
+                  r="58"
+                />
+              </svg>
+              <div class="mini-readout">
+                <span class="mini-label">REMAINING</span>
+                <strong id="remain-display">5000</strong>
+                <span class="mini-unit">KM TO 5K</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="alert-banner" id="alert-banner" hidden>
+        <div class="alert-pulse"></div>
+        <div>
+          <strong id="alert-title">Engine Oil Change Required</strong>
+          <p id="alert-body">
+            Interval has reached the 5,000 km threshold. Schedule service now.
+          </p>
+        </div>
+        <button type="button" class="btn primary compact" id="btn-ack-alert">
+          Acknowledge
+        </button>
+      </section>
+
+      <section class="panels">
+        <article class="panel">
+          <header class="panel-head">
+            <h2>Service Telemetry</h2>
+            <span class="panel-tag">LIVE</span>
+          </header>
+          <dl class="telemetry">
+            <div>
+              <dt>Last Date Check</dt>
+              <dd id="last-date">—</dd>
+            </div>
+            <div>
+              <dt>Next Due</dt>
+              <dd id="next-due">—</dd>
+            </div>
+            <div>
+              <dt>Total Mileage (Cycle)</dt>
+              <dd id="total-mileage">—</dd>
+            </div>
+            <div>
+              <dt>Action Status</dt>
+              <dd>
+                <select id="action-status" aria-label="Action status">
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head">
+            <h2>Required Parts</h2>
+            <span class="panel-tag oil">OIL SERVICE</span>
+          </header>
+          <ul class="parts-list" id="parts-list"></ul>
+        </article>
+
+        <article class="panel wide">
+          <header class="panel-head">
+            <h2>PM Schedule Log</h2>
+            <span class="panel-tag">HISTORY</span>
+          </header>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Last Check</th>
+                  <th>Odo (KM)</th>
+                  <th>Cycle KM</th>
+                  <th>Next Due</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                  <th>Part</th>
+                </tr>
+              </thead>
+              <tbody id="schedule-body"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel wide admin-panel" id="admin-panel" hidden>
+          <header class="panel-head">
+            <h2>Admin Board</h2>
+            <span class="panel-tag oil">SAVE TO FLEET</span>
+          </header>
+
+          <form id="admin-form" class="admin-form" novalidate>
+            <fieldset class="admin-fieldset">
+              <legend>Vehicle Selection</legend>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Edit Vehicle</span>
+                  <select id="admin-vehicle-select">
+                    <option value="new">+ Add New Vehicle</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="admin-fieldset">
+              <legend>Car Details</legend>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Vehicle Name</span>
+                  <input type="text" id="input-name" name="name" required placeholder="e.g. Ford Everest White" maxlength="60" />
+                </label>
+                <label class="field">
+                  <span>Plate No.</span>
+                  <input type="text" id="input-plate" name="plate" required placeholder="e.g. CCK 5751" maxlength="20" />
+                </label>
+                <label class="field">
+                  <span>Model / Year</span>
+                  <input type="text" id="input-model" name="model" required placeholder="e.g. 2024" maxlength="40" />
+                </label>
+                <label class="field">
+                  <span>Engine Type</span>
+                  <input type="text" id="input-engine" name="engine" required placeholder="e.g. 6HK1-814133" maxlength="60" />
+                </label>
+                <label class="field">
+                  <span>Action Status</span>
+                  <select id="input-action" name="actionStatus">
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="admin-fieldset">
+              <legend>Odometer / KM</legend>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Current Odo (KM)</span>
+                  <input type="number" id="input-current-odo" name="currentOdo" required min="0" step="1" placeholder="e.g. 199886" />
+                </label>
+                <label class="field">
+                  <span>Last Service Odo (KM)</span>
+                  <input type="number" id="input-last-odo" name="lastServiceOdo" required min="0" step="1" placeholder="e.g. 197627" />
+                </label>
+                <label class="field">
+                  <span>Last Date Check</span>
+                  <input type="text" id="input-last-date" name="lastDate" required placeholder="e.g. 6/15/2026" />
+                </label>
+                <label class="field">
+                  <span>Next Due</span>
+                  <input type="text" id="input-next-due" name="nextDue" required placeholder="e.g. 8/15/2026" />
+                </label>
+              </div>
+              <p class="field-hint" id="admin-cycle-hint">Cycle mileage will calculate automatically from current − last service odo.</p>
+            </fieldset>
+
+            <fieldset class="admin-fieldset">
+              <legend>PMS Materials</legend>
+              <div id="materials-editor" class="materials-editor"></div>
+              <button type="button" class="btn ghost compact" id="btn-add-material">
+                + Add Material
+              </button>
+            </fieldset>
+
+            <div class="admin-actions">
+              <button type="submit" class="btn primary" id="btn-save-vehicle">
+                Save Vehicle
+              </button>
+              <button type="button" class="btn ghost" id="btn-new-vehicle">
+                Clear / New
+              </button>
+              <button type="button" class="btn danger" id="btn-delete-vehicle">
+                Delete Vehicle
+              </button>
+            </div>
+          </form>
+        </article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

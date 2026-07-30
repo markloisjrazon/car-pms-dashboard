@@ -801,6 +801,31 @@ function readMaterialsFromEditor() {
   );
 }
 
+function toDateInputValue(value) {
+  if (!value || !String(value).trim()) return "";
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function fromDateInputValue(value) {
+  if (!value || !String(value).trim()) return "";
+  const raw = String(value).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const [year, month, day] = raw.split("-").map(Number);
+  const parsed = new Date(year, month - 1, day);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return parsed.toLocaleDateString("en-US");
+}
+
 function fillAdminForm(vehicleId) {
   adminEditingId = vehicleId;
   if (vehicleId === "new") {
@@ -826,77 +851,46 @@ function fillAdminForm(vehicleId) {
   }
 
   els.inputName.value = vehicle.name || "";
-  els.inputPlate.value = vehicle.plate;
-  els.inputModel.value = vehicle.model;
-  els.inputEngine.value = vehicle.engine;
-  els.inputAction.value = vehicle.actionStatus;
-  els.inputCurrentOdo.value = String(vehicle.currentOdo);
-  els.inputLastOdo.value = String(vehicle.lastServiceOdo);
-  els.inputLastDate.value = vehicle.lastDate;
-  els.inputNextDue.value = vehicle.nextDue;
-  renderMaterialsEditor(vehicle.parts);
+  els.inputPlate.value = vehicle.plate || "";
+  els.inputModel.value = vehicle.model || "";
+  els.inputEngine.value = vehicle.engine || "";
+  els.inputAction.value = vehicle.actionStatus || "Pending";
+  els.inputCurrentOdo.value =
+    vehicle.currentOdo === 0 || vehicle.currentOdo ? String(vehicle.currentOdo) : "";
+  els.inputLastOdo.value =
+    vehicle.lastServiceOdo === 0 || vehicle.lastServiceOdo
+      ? String(vehicle.lastServiceOdo)
+      : "";
+  els.inputLastDate.value = toDateInputValue(vehicle.lastDate);
+  els.inputNextDue.value = toDateInputValue(vehicle.nextDue);
+  renderMaterialsEditor(vehicle.parts?.length ? vehicle.parts : [{ name: "", oem: "", alt: "", spec: "" }]);
   updateAdminCycleHint();
   els.adminVehicleSelect.value = vehicle.id;
 }
 
-function validateAdminForm() {
-  const name = els.inputName.value.trim();
-  const plate = els.inputPlate.value.trim();
-  const model = els.inputModel.value.trim();
-  const engine = els.inputEngine.value.trim();
-  const currentOdo = Number(els.inputCurrentOdo.value);
-  const lastServiceOdo = Number(els.inputLastOdo.value);
-  const lastDate = els.inputLastDate.value.trim();
-  const nextDue = els.inputNextDue.value.trim();
-  const materials = readMaterialsFromEditor().filter((m) => m.name);
-
-  if (!name || !plate || !model || !engine || !lastDate || !nextDue) {
-    notify("VALIDATION", "Fill in all car detail and date fields.", "warn");
-    return null;
-  }
-
-  if (!Number.isFinite(currentOdo) || currentOdo < 0) {
-    notify("VALIDATION", "Current odometer must be a valid number ≥ 0.", "warn");
-    return null;
-  }
-
-  if (!Number.isFinite(lastServiceOdo) || lastServiceOdo < 0) {
-    notify("VALIDATION", "Last service odo must be a valid number ≥ 0.", "warn");
-    return null;
-  }
-
-  if (currentOdo < lastServiceOdo) {
-    notify(
-      "VALIDATION",
-      "Current odo cannot be lower than last service odo.",
-      "warn"
-    );
-    return null;
-  }
-
-  if (!materials.length) {
-    notify("VALIDATION", "Add at least one PMS material with a part name.", "warn");
-    return null;
-  }
+function collectAdminForm() {
+  const currentRaw = els.inputCurrentOdo.value.trim();
+  const lastRaw = els.inputLastOdo.value.trim();
+  const currentOdo = currentRaw === "" ? 0 : Number(currentRaw);
+  const lastServiceOdo = lastRaw === "" ? 0 : Number(lastRaw);
 
   return {
-    name,
-    plate,
-    model,
-    engine,
-    currentOdo,
-    lastServiceOdo,
-    lastDate,
-    nextDue,
-    actionStatus: els.inputAction.value,
-    materials,
+    name: els.inputName.value.trim(),
+    plate: els.inputPlate.value.trim(),
+    model: els.inputModel.value.trim(),
+    engine: els.inputEngine.value.trim(),
+    currentOdo: Number.isFinite(currentOdo) ? Math.max(0, currentOdo) : 0,
+    lastServiceOdo: Number.isFinite(lastServiceOdo) ? Math.max(0, lastServiceOdo) : 0,
+    lastDate: fromDateInputValue(els.inputLastDate.value),
+    nextDue: fromDateInputValue(els.inputNextDue.value),
+    actionStatus: els.inputAction.value || "Pending",
+    materials: readMaterialsFromEditor(),
   };
 }
 
 function saveAdminVehicle(event) {
   event.preventDefault();
-  const data = validateAdminForm();
-  if (!data) return;
+  const data = collectAdminForm();
 
   const isNew = adminEditingId === "new";
   let vehicle;
@@ -904,11 +898,12 @@ function saveAdminVehicle(event) {
   if (isNew) {
     vehicle = createEmptyVehicle();
     vehicle.history = [];
+    store.vehicles.push(vehicle);
   } else {
     vehicle = store.vehicles.find((v) => v.id === adminEditingId);
     if (!vehicle) {
-      notify("SAVE ERROR", "Selected vehicle was not found.", "crit");
-      return;
+      vehicle = createEmptyVehicle();
+      store.vehicles.push(vehicle);
     }
   }
 
@@ -924,10 +919,6 @@ function saveAdminVehicle(event) {
   vehicle.parts = data.materials;
   vehicle.hasOdometer = data.currentOdo > 0 || data.lastServiceOdo > 0;
   vehicle.acknowledgedCritical = false;
-
-  if (isNew) {
-    store.vehicles.push(vehicle);
-  }
 
   store.activeVehicleId = vehicle.id;
   adminEditingId = vehicle.id;

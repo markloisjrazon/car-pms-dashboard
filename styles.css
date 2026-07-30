@@ -339,10 +339,10 @@ html[data-theme="light"] .theme-btn[aria-pressed="true"] {
   font-size: 1rem;
 }
 
-.field input::placeholder,
-.materials-editor input::placeholder {
-  color: var(--muted);
-  opacity: 0.85;
+.field input[type="date"] {
+  color-scheme: inherit;
+  min-height: 2.4rem;
+  cursor: pointer;
 }
 
 .field input:focus,

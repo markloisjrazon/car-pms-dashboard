@@ -68,42 +68,19 @@
 
     <main class="dashboard">
       <section class="hero">
-        <div class="hero-visual">
-          <button
-            type="button"
-            class="vehicle-stage"
-            id="vehicle-stage"
-            aria-label="Rotate vehicle preview"
-            title="Click to rotate"
-          >
-            <div class="vehicle-glow" aria-hidden="true"></div>
-            <div class="vehicle-turntable" id="vehicle-turntable">
-              <img
-                id="vehicle-photo"
-                class="vehicle-photo"
-                src="assets/isuzu-forward.png"
-                alt="Vehicle preview"
-              />
-              <div class="vehicle-placeholder" id="vehicle-placeholder" hidden>
-                No photo yet
-              </div>
-            </div>
-            <span class="vehicle-hint">Click to rotate</span>
-          </button>
-          <div class="hero-copy">
-            <h1>Service Interval Monitor</h1>
-            <p>
-              Automated oil-change surveillance. Warning near 4,500 km — critical
-              alert at 5,000 km.
-            </p>
-            <div class="cta-row">
-              <button type="button" class="btn primary" id="btn-sim-drive">
-                Simulate +250 km
-              </button>
-              <button type="button" class="btn ghost" id="btn-reset-cycle">
-                Reset Oil Cycle
-              </button>
-            </div>
+        <div class="hero-copy">
+          <h1>Service Interval Monitor</h1>
+          <p>
+            Automated oil-change surveillance. Warning near 4,500 km — critical
+            alert at 5,000 km.
+          </p>
+          <div class="cta-row">
+            <button type="button" class="btn primary" id="btn-sim-drive">
+              Simulate +250 km
+            </button>
+            <button type="button" class="btn ghost" id="btn-reset-cycle">
+              Reset Oil Cycle
+            </button>
           </div>
         </div>
 
@@ -195,6 +172,28 @@
                 <span class="mini-unit">KM TO 5K</span>
               </div>
             </div>
+
+            <button
+              type="button"
+              class="vehicle-stage"
+              id="vehicle-stage"
+              aria-label="Rotate vehicle preview"
+              title="Click to rotate"
+            >
+              <div class="vehicle-glow" aria-hidden="true"></div>
+              <div class="vehicle-turntable" id="vehicle-turntable">
+                <img
+                  id="vehicle-photo"
+                  class="vehicle-photo"
+                  src="assets/isuzu-forward.png"
+                  alt="Vehicle preview"
+                />
+                <div class="vehicle-placeholder" id="vehicle-placeholder" hidden>
+                  No photo
+                </div>
+              </div>
+              <span class="vehicle-hint">Click to rotate</span>
+            </button>
           </div>
         </div>
       </section>

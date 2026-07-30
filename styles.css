@@ -399,38 +399,42 @@ html[data-theme="light"] .theme-btn[aria-pressed="true"] {
   padding: 1rem 0 2rem;
 }
 
+.odo-stack {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+}
+
 .vehicle-stage {
   position: relative;
   display: grid;
   place-items: center;
-  width: 150px;
-  margin-inline: auto;
-  padding: 0.35rem 0 0.55rem;
+  width: 96px;
+  margin: 0;
+  padding: 0;
   border: 0;
   background: transparent;
+  box-shadow: none;
   cursor: pointer;
   overflow: visible;
   color: inherit;
   font: inherit;
-  perspective: 900px;
+  perspective: 800px;
 }
 
 .vehicle-stage:focus-visible {
   outline: 2px solid var(--red-bright);
-  outline-offset: 3px;
-}
-
-.vehicle-glow {
-  display: none;
+  outline-offset: 2px;
 }
 
 .vehicle-turntable {
   position: relative;
   z-index: 1;
-  width: 130px;
-  height: 78px;
+  width: 88px;
+  height: 52px;
   display: grid;
   place-items: center;
+  background: transparent;
   transform-style: preserve-3d;
   transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -459,33 +463,26 @@ html[data-theme="light"] .theme-btn[aria-pressed="true"] {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   filter: none;
-  transition: transform 0.45s ease;
+  transition: transform 0.35s ease;
   user-select: none;
   pointer-events: none;
 }
 
 .vehicle-stage:hover .vehicle-photo {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   filter: none;
 }
 
 .vehicle-placeholder {
   color: var(--muted);
   font-family: var(--font-display);
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.vehicle-hint {
-  position: relative;
-  z-index: 2;
-  margin-top: 0.15rem;
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
 }
 
 .photo-upload {
@@ -503,9 +500,12 @@ html[data-theme="light"] .theme-btn[aria-pressed="true"] {
 }
 
 .admin-photo-preview {
-  max-width: 160px;
-  max-height: 90px;
+  max-width: 120px;
+  max-height: 70px;
   object-fit: contain;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   filter: none;
 }
 
@@ -708,7 +708,9 @@ html[data-theme="light"] .clock {
   color: var(--muted);
 }
 
-html[data-theme="light"] .vehicle-stage {
+html[data-theme="light"] .vehicle-stage,
+html[data-theme="light"] .vehicle-photo,
+html[data-theme="light"] .admin-photo-preview {
   background: transparent;
 }
 

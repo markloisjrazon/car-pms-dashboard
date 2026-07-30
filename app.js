@@ -652,6 +652,68 @@ function setAdminPhotoPreview(photo) {
   }
 }
 
+function knockoutBackdrop(dataUrl) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(image, 0, 0);
+        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = frame.data;
+        const corners = [
+          0,
+          (canvas.width - 1) * 4,
+          (canvas.height - 1) * canvas.width * 4,
+          ((canvas.height - 1) * canvas.width + (canvas.width - 1)) * 4,
+        ];
+        const avg = corners.reduce(
+          (acc, idx) => {
+            acc.r += data[idx];
+            acc.g += data[idx + 1];
+            acc.b += data[idx + 2];
+            return acc;
+          },
+          { r: 0, g: 0, b: 0 }
+        );
+        avg.r /= 4;
+        avg.g /= 4;
+        avg.b /= 4;
+        const isDark =
+          avg.r < 40 && avg.g < 40 && avg.b < 40;
+        const isLight =
+          avg.r > 235 && avg.g > 235 && avg.b > 235;
+        if (!isDark && !isLight) {
+          resolve(dataUrl);
+          return;
+        }
+        const threshold = isDark ? 42 : 28;
+        for (let i = 0; i < data.length; i += 4) {
+          const dr = Math.abs(data[i] - avg.r);
+          const dg = Math.abs(data[i + 1] - avg.g);
+          const db = Math.abs(data[i + 2] - avg.b);
+          if (dr <= threshold && dg <= threshold && db <= threshold) {
+            data[i + 3] = 0;
+          }
+        }
+        ctx.putImageData(frame, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(dataUrl);
+      }
+    };
+    image.onerror = () => resolve(dataUrl);
+    image.src = dataUrl;
+  });
+}
+
 function readPhotoFile(file) {
   return new Promise((resolve, reject) => {
     if (!file) {
@@ -667,8 +729,23 @@ function readPhotoFile(file) {
       reject(new Error("Image must be under 2.5 MB."));
       return;
     }
+    if (file.type === "image/svg+xml") {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Could not read image file."));
+      reader.readAsDataURL(file);
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onload = async () => {
+      try {
+        const raw = String(reader.result || "");
+        const cleaned = await knockoutBackdrop(raw);
+        resolve(cleaned);
+      } catch {
+        reject(new Error("Could not process image file."));
+      }
+    };
     reader.onerror = () => reject(new Error("Could not read image file."));
     reader.readAsDataURL(file);
   });

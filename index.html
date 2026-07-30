@@ -138,23 +138,46 @@
           </div>
 
           <div class="side-gauges">
-            <div class="mini-gauge">
-              <svg viewBox="0 0 160 160" aria-hidden="true">
-                <circle class="mini-ring" cx="80" cy="80" r="58" />
-                <circle
-                  id="odo-progress"
-                  class="mini-progress"
-                  cx="80"
-                  cy="80"
-                  r="58"
-                />
-              </svg>
-              <div class="mini-readout">
-                <span class="mini-label">ODOMETER</span>
-                <strong id="odo-display">0</strong>
-                <span class="mini-unit">KM</span>
+            <div class="odo-stack">
+              <div class="mini-gauge">
+                <svg viewBox="0 0 160 160" aria-hidden="true">
+                  <circle class="mini-ring" cx="80" cy="80" r="58" />
+                  <circle
+                    id="odo-progress"
+                    class="mini-progress"
+                    cx="80"
+                    cy="80"
+                    r="58"
+                  />
+                </svg>
+                <div class="mini-readout">
+                  <span class="mini-label">ODOMETER</span>
+                  <strong id="odo-display">0</strong>
+                  <span class="mini-unit">KM</span>
+                </div>
               </div>
+
+              <button
+                type="button"
+                class="vehicle-stage"
+                id="vehicle-stage"
+                aria-label="Rotate vehicle preview"
+                title="Click to rotate"
+              >
+                <div class="vehicle-turntable" id="vehicle-turntable">
+                  <img
+                    id="vehicle-photo"
+                    class="vehicle-photo"
+                    src="assets/isuzu-forward.png"
+                    alt="Vehicle preview"
+                  />
+                  <div class="vehicle-placeholder" id="vehicle-placeholder" hidden>
+                    No photo
+                  </div>
+                </div>
+              </button>
             </div>
+
             <div class="mini-gauge">
               <svg viewBox="0 0 160 160" aria-hidden="true">
                 <circle class="mini-ring" cx="80" cy="80" r="58" />
@@ -172,28 +195,6 @@
                 <span class="mini-unit">KM TO 5K</span>
               </div>
             </div>
-
-            <button
-              type="button"
-              class="vehicle-stage"
-              id="vehicle-stage"
-              aria-label="Rotate vehicle preview"
-              title="Click to rotate"
-            >
-              <div class="vehicle-glow" aria-hidden="true"></div>
-              <div class="vehicle-turntable" id="vehicle-turntable">
-                <img
-                  id="vehicle-photo"
-                  class="vehicle-photo"
-                  src="assets/isuzu-forward.png"
-                  alt="Vehicle preview"
-                />
-                <div class="vehicle-placeholder" id="vehicle-placeholder" hidden>
-                  No photo
-                </div>
-              </div>
-              <span class="vehicle-hint">Click to rotate</span>
-            </button>
           </div>
         </div>
       </section>

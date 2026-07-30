@@ -250,6 +250,7 @@ function createDefaultVehicle() {
     acknowledgedCritical: false,
     lastNotifiedLevel: "safe",
     hasOdometer: true,
+    photo: "assets/isuzu-forward.png",
   };
 }
 
@@ -270,6 +271,7 @@ function createEverestVehicle() {
     acknowledgedCritical: false,
     lastNotifiedLevel: "safe",
     hasOdometer: true,
+    photo: "",
   };
 }
 
@@ -290,6 +292,7 @@ function createBlackEverestVehicle() {
     acknowledgedCritical: false,
     lastNotifiedLevel: "safe",
     hasOdometer: true,
+    photo: "",
   };
 }
 
@@ -310,6 +313,7 @@ function createStradaVehicle() {
     acknowledgedCritical: false,
     lastNotifiedLevel: "safe",
     hasOdometer: false,
+    photo: "",
   };
 }
 
@@ -341,6 +345,7 @@ function createEmptyVehicle() {
     acknowledgedCritical: false,
     lastNotifiedLevel: "safe",
     hasOdometer: true,
+    photo: "",
   };
 }
 
@@ -368,6 +373,7 @@ function ensureSeedVehicles(storeData) {
   storeData.vehicles = storeData.vehicles.map((v) => ({
     ...v,
     name: v.name || "",
+    photo: v.photo || (v.id === "veh-cck-5751" ? "assets/isuzu-forward.png" : ""),
   }));
   return storeData;
 }
@@ -392,7 +398,11 @@ function saveStore() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   } catch {
-    notify("SAVE ERROR", "Could not save fleet data to browser storage.", "crit");
+    notify(
+      "SAVE ERROR",
+      "Could not save fleet data. Photo may be too large — try a smaller PNG/SVG.",
+      "crit"
+    );
   }
 }
 
@@ -407,6 +417,9 @@ if (store._didMigrate) {
 }
 let adminEditingId = "new";
 let gaugeInitialized = false;
+let pendingPhotoData = null;
+let photoCleared = false;
+let vehicleRotateDeg = 0;
 
 const els = {
   clock: document.getElementById("live-clock"),
@@ -438,6 +451,14 @@ const els = {
   btnAdminToggle: document.getElementById("btn-admin-toggle"),
   btnThemeDark: document.getElementById("btn-theme-dark"),
   btnThemeLight: document.getElementById("btn-theme-light"),
+  vehicleStage: document.getElementById("vehicle-stage"),
+  vehicleTurntable: document.getElementById("vehicle-turntable"),
+  vehiclePhoto: document.getElementById("vehicle-photo"),
+  vehiclePlaceholder: document.getElementById("vehicle-placeholder"),
+  inputPhoto: document.getElementById("input-photo"),
+  adminPhotoPreview: document.getElementById("admin-photo-preview"),
+  photoHint: document.getElementById("photo-hint"),
+  btnClearPhoto: document.getElementById("btn-clear-photo"),
   adminPanel: document.getElementById("admin-panel"),
   adminForm: document.getElementById("admin-form"),
   adminVehicleSelect: document.getElementById("admin-vehicle-select"),
@@ -599,6 +620,58 @@ function updateMiniGauges(vehicle, cycleKm) {
 function updateHeader(vehicle) {
   els.vehicleMeta.textContent = `${vehicle.name ? `${vehicle.name} · ` : ""}${vehicle.model || "—"} · ${vehicle.engine || "—"}`;
   document.title = `APEX PMS — ${vehicle.name || vehicle.plate || "Fleet"}`;
+}
+
+function updateVehiclePhoto(vehicle) {
+  const photo = vehicle.photo || "";
+  if (photo) {
+    els.vehiclePhoto.hidden = false;
+    els.vehiclePlaceholder.hidden = true;
+    els.vehiclePhoto.src = photo;
+    els.vehiclePhoto.alt = `${vehicleLabel(vehicle)} preview`;
+  } else {
+    els.vehiclePhoto.hidden = true;
+    els.vehiclePlaceholder.hidden = false;
+    els.vehiclePhoto.removeAttribute("src");
+    els.vehiclePhoto.alt = "No vehicle photo";
+  }
+  vehicleRotateDeg = 0;
+  els.vehicleTurntable.style.transform = "rotateY(0deg)";
+  els.vehicleStage.classList.remove("is-rotating", "is-spinning");
+}
+
+function setAdminPhotoPreview(photo) {
+  if (photo) {
+    els.adminPhotoPreview.hidden = false;
+    els.adminPhotoPreview.src = photo;
+    els.photoHint.textContent = "Photo ready. Save vehicle to apply on dashboard.";
+  } else {
+    els.adminPhotoPreview.hidden = true;
+    els.adminPhotoPreview.removeAttribute("src");
+    els.photoHint.textContent = "PNG or SVG recommended. Click dashboard photo to rotate.";
+  }
+}
+
+function readPhotoFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+    const allowed = ["image/png", "image/svg+xml", "image/jpeg", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      reject(new Error("Use PNG, SVG, JPG, or WEBP."));
+      return;
+    }
+    if (file.size > 2.5 * 1024 * 1024) {
+      reject(new Error("Image must be under 2.5 MB."));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read image file."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function updateTelemetry(vehicle, cycleKm) {
@@ -828,6 +901,10 @@ function fromDateInputValue(value) {
 
 function fillAdminForm(vehicleId) {
   adminEditingId = vehicleId;
+  pendingPhotoData = null;
+  photoCleared = false;
+  if (els.inputPhoto) els.inputPhoto.value = "";
+
   if (vehicleId === "new") {
     els.inputName.value = "";
     els.inputPlate.value = "";
@@ -839,6 +916,7 @@ function fillAdminForm(vehicleId) {
     els.inputLastDate.value = "";
     els.inputNextDue.value = "";
     renderMaterialsEditor([{ name: "", oem: "", alt: "", spec: "" }]);
+    setAdminPhotoPreview("");
     updateAdminCycleHint();
     els.adminVehicleSelect.value = "new";
     return;
@@ -864,6 +942,7 @@ function fillAdminForm(vehicleId) {
   els.inputLastDate.value = toDateInputValue(vehicle.lastDate);
   els.inputNextDue.value = toDateInputValue(vehicle.nextDue);
   renderMaterialsEditor(vehicle.parts?.length ? vehicle.parts : [{ name: "", oem: "", alt: "", spec: "" }]);
+  setAdminPhotoPreview(vehicle.photo || "");
   updateAdminCycleHint();
   els.adminVehicleSelect.value = vehicle.id;
 }
@@ -920,6 +999,14 @@ function saveAdminVehicle(event) {
   vehicle.hasOdometer = data.currentOdo > 0 || data.lastServiceOdo > 0;
   vehicle.acknowledgedCritical = false;
 
+  if (photoCleared) {
+    vehicle.photo = "";
+  } else if (pendingPhotoData) {
+    vehicle.photo = pendingPhotoData;
+  } else if (typeof vehicle.photo !== "string") {
+    vehicle.photo = "";
+  }
+
   store.activeVehicleId = vehicle.id;
   adminEditingId = vehicle.id;
   saveStore();
@@ -963,6 +1050,7 @@ function refresh() {
   store.activeVehicleId = vehicle.id;
   const cycleKm = getCycleKm(vehicle);
   updateHeader(vehicle);
+  updateVehiclePhoto(vehicle);
   updateGauge(cycleKm, vehicle);
   updateMiniGauges(vehicle, cycleKm);
   updateTelemetry(vehicle, cycleKm);
@@ -1080,6 +1168,38 @@ function applyTheme(theme) {
 
 els.btnThemeDark.addEventListener("click", () => applyTheme("dark"));
 els.btnThemeLight.addEventListener("click", () => applyTheme("light"));
+
+els.vehicleStage.addEventListener("click", () => {
+  vehicleRotateDeg = (vehicleRotateDeg + 180) % 3600;
+  els.vehicleTurntable.style.transform = `rotateY(${vehicleRotateDeg}deg) scale(1.03)`;
+  window.setTimeout(() => {
+    els.vehicleTurntable.style.transform = `rotateY(${vehicleRotateDeg}deg) scale(1)`;
+  }, 280);
+});
+
+els.inputPhoto.addEventListener("change", async () => {
+  const file = els.inputPhoto.files?.[0];
+  if (!file) return;
+  try {
+    const dataUrl = await readPhotoFile(file);
+    pendingPhotoData = dataUrl;
+    photoCleared = false;
+    setAdminPhotoPreview(dataUrl);
+    notify("PHOTO", "Image loaded. Click Save Vehicle to apply.", "safe");
+  } catch (error) {
+    pendingPhotoData = null;
+    els.inputPhoto.value = "";
+    notify("PHOTO", error.message || "Could not load image.", "warn");
+  }
+});
+
+els.btnClearPhoto.addEventListener("click", () => {
+  pendingPhotoData = null;
+  photoCleared = true;
+  els.inputPhoto.value = "";
+  setAdminPhotoPreview("");
+  notify("PHOTO", "Photo cleared. Save vehicle to remove it from dashboard.", "warn");
+});
 
 els.btnAdminToggle.addEventListener("click", () => {
   const opening = els.adminPanel.hidden;

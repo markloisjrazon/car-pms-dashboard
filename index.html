@@ -68,19 +68,42 @@
 
     <main class="dashboard">
       <section class="hero">
-        <div class="hero-copy">
-          <h1>Service Interval Monitor</h1>
-          <p>
-            Automated oil-change surveillance. Warning near 4,500 km — critical
-            alert at 5,000 km.
-          </p>
-          <div class="cta-row">
-            <button type="button" class="btn primary" id="btn-sim-drive">
-              Simulate +250 km
-            </button>
-            <button type="button" class="btn ghost" id="btn-reset-cycle">
-              Reset Oil Cycle
-            </button>
+        <div class="hero-visual">
+          <button
+            type="button"
+            class="vehicle-stage"
+            id="vehicle-stage"
+            aria-label="Rotate vehicle preview"
+            title="Click to rotate"
+          >
+            <div class="vehicle-glow" aria-hidden="true"></div>
+            <div class="vehicle-turntable" id="vehicle-turntable">
+              <img
+                id="vehicle-photo"
+                class="vehicle-photo"
+                src="assets/isuzu-forward.png"
+                alt="Vehicle preview"
+              />
+              <div class="vehicle-placeholder" id="vehicle-placeholder" hidden>
+                No photo yet
+              </div>
+            </div>
+            <span class="vehicle-hint">Click to rotate</span>
+          </button>
+          <div class="hero-copy">
+            <h1>Service Interval Monitor</h1>
+            <p>
+              Automated oil-change surveillance. Warning near 4,500 km — critical
+              alert at 5,000 km.
+            </p>
+            <div class="cta-row">
+              <button type="button" class="btn primary" id="btn-sim-drive">
+                Simulate +250 km
+              </button>
+              <button type="button" class="btn ghost" id="btn-reset-cycle">
+                Reset Oil Cycle
+              </button>
+            </div>
           </div>
         </div>
 
@@ -320,6 +343,24 @@
                 </label>
               </div>
               <p class="field-hint" id="admin-cycle-hint">Cycle mileage will calculate automatically from current − last service odo.</p>
+            </fieldset>
+
+            <fieldset class="admin-fieldset">
+              <legend>Vehicle Photo</legend>
+              <div class="photo-upload">
+                <input
+                  type="file"
+                  id="input-photo"
+                  accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                />
+                <div class="photo-preview-wrap">
+                  <img id="admin-photo-preview" class="admin-photo-preview" alt="Upload preview" hidden />
+                  <p class="field-hint" id="photo-hint">PNG or SVG recommended. Click dashboard photo to rotate.</p>
+                </div>
+                <button type="button" class="btn ghost compact" id="btn-clear-photo">
+                  Remove Photo
+                </button>
+              </div>
             </fieldset>
 
             <fieldset class="admin-fieldset">
